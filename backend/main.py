@@ -1,4 +1,7 @@
 from fastapi import FastAPI
+# BARU: Import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
+
 from .database import engine, Base
 from .routers import auth, user
 
@@ -11,7 +14,18 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# Menyertakan router otentikasi
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,       # Mengizinkan origin yang terdaftar
+    allow_credentials=True,      # Mengizinkan cookie/credentials
+    allow_methods=["*"],         # Mengizinkan semua method (GET, POST, dll)
+    allow_headers=["*"],         # Mengizinkan semua header
+)
+
 app.include_router(auth.router)
 app.include_router(user.router)
 
