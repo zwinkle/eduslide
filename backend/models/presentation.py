@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, DateTime, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from ..database import Base
+from .slide import Slide
 
 class Presentation(Base):
     __tablename__ = "presentations"
@@ -14,4 +15,4 @@ class Presentation(Base):
 
     # Relasi ke User (pemilik) dan Slide
     owner = relationship("User")
-    slides = relationship("Slide", back_populates="presentation", cascade="all, delete-orphan")
+    slides = relationship("Slide", back_populates="presentation", cascade="all, delete-orphan", order_by="Slide.page_number")

@@ -18,6 +18,9 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # PAKSA ROLE MENJADI 'teacher' SAAT REGISTRASI
+    user.role = 'teacher'
+    
     hashed_password = get_password_hash(user.password)
     new_user = User(
         name=user.name,

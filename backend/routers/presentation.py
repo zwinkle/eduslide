@@ -14,9 +14,12 @@ from ..models.user import User
 from ..models.slide import Slide
 from ..schemas.presentation import PresentationCreate, PresentationDisplay, PresentationWithSlides
 from ..schemas.session import SessionDisplay
+from ..schemas.activity import PollCreate
+from ..schemas.slide import SlideDisplay
 from ..crud import presentation as crud_presentation
 from ..crud import session as crud_session
 from ..utils.security import get_current_user
+
 
 router = APIRouter(
     prefix="/presentations",
@@ -36,7 +39,7 @@ def create_new_presentation(
         raise HTTPException(status_code=403, detail="Only teachers can create presentations")
     return crud_presentation.create_presentation(db=db, presentation=presentation, owner_id=current_user.id)
 
-@router.get("/", response_model=List[PresentationDisplay])
+@router.get("/", response_model=List[PresentationWithSlides])
 def get_user_presentations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -46,10 +49,11 @@ def get_user_presentations(
 @router.get("/{presentation_id}", response_model=PresentationWithSlides)
 def get_single_presentation(
     presentation_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
+    # HAPUS 'current_user' dari sini karena endpoint ini sekarang publik
 ):
-    presentation = crud_presentation.get_presentation_by_id(db=db, presentation_id=presentation_id, owner_id=current_user.id)
+    # Panggil fungsi tanpa owner_id
+    presentation = crud_presentation.get_presentation_by_id(db=db, presentation_id=presentation_id)
     if not presentation:
         raise HTTPException(status_code=404, detail="Presentation not found")
     return presentation
@@ -57,14 +61,15 @@ def get_single_presentation(
 @router.put("/{presentation_id}", response_model=PresentationDisplay)
 def update_presentation(
     presentation_id: uuid.UUID,
-    title: str, # Kita akan mengirim judul baru sebagai query parameter
+    title: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    presentation = crud_presentation.get_presentation_by_id(db, presentation_id, current_user.id)
+    presentation = crud_presentation.get_presentation_by_id(db, presentation_id, owner_id=current_user.id)
     if not presentation:
-        raise HTTPException(status_code=404, detail="Presentation not found")
+        raise HTTPException(status_code=404, detail="Presentation not found or you don't have access")
     return crud_presentation.update_presentation_title(db, presentation, title)
+
 
 @router.delete("/{presentation_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_presentation(
@@ -72,7 +77,7 @@ def delete_presentation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    presentation = crud_presentation.get_presentation_by_id(db, presentation_id, current_user.id)
+    presentation = crud_presentation.get_presentation_by_id(db, presentation_id, owner_id=current_user.id)
     if not presentation:
         raise HTTPException(status_code=404, detail="Presentation not found")
     crud_presentation.delete_presentation(db, presentation)
@@ -151,3 +156,33 @@ def get_session_qr_code(session_code: str):
     img.save(buf, "PNG")
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png")
+
+@router.post("/slides/{slide_id}/activity", response_model=SlideDisplay)
+def add_activity_to_slide(
+    slide_id: uuid.UUID,
+    poll_data: PollCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Menambahkan aktivitas (saat ini hanya polling) ke sebuah slide.
+    Endpoint ini diproteksi dan memerlukan hak akses pemilik.
+    """
+    # Pertama, ambil slide berdasarkan ID-nya
+    slide = db.query(Slide).filter(Slide.id == slide_id).first()
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+
+    # Kemanan: Pastikan user yang login adalah pemilik presentasi dari slide ini
+    # Kita panggil get_presentation_by_id dengan menyertakan owner_id
+    presentation = crud_presentation.get_presentation_by_id(
+        db, 
+        presentation_id=slide.presentation_id, 
+        owner_id=current_user.id
+    )
+    if not presentation:
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this slide")
+
+    # Jika aman, panggil fungsi CRUD untuk menyimpan data aktivitas
+    updated_slide = crud_presentation.set_slide_activity(db, slide, poll_data)
+    return updated_slide

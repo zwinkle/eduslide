@@ -1,7 +1,9 @@
 import uuid
 from sqlalchemy.orm import Session
 from ..models.presentation import Presentation
+from ..models.slide import Slide
 from ..schemas.presentation import PresentationCreate
+from ..schemas.activity import PollCreate
 
 def create_presentation(db: Session, presentation: PresentationCreate, owner_id: uuid.UUID):
     db_presentation = Presentation(
@@ -16,8 +18,16 @@ def create_presentation(db: Session, presentation: PresentationCreate, owner_id:
 def get_presentations_by_owner(db: Session, owner_id: uuid.UUID):
     return db.query(Presentation).filter(Presentation.owner_id == owner_id).all()
 
-def get_presentation_by_id(db: Session, presentation_id: uuid.UUID, owner_id: uuid.UUID):
-    return db.query(Presentation).filter(Presentation.id == presentation_id, Presentation.owner_id == owner_id).first()
+def get_presentation_by_id(db: Session, presentation_id: uuid.UUID, owner_id: uuid.UUID = None):
+    """
+    Mengambil presentasi berdasarkan ID.
+    Jika owner_id diberikan, akan memfilter juga berdasarkan pemilik.
+    Jika owner_id adalah None, hanya akan mencari berdasarkan ID presentasi.
+    """
+    query = db.query(Presentation).filter(Presentation.id == presentation_id)
+    if owner_id:
+        query = query.filter(Presentation.owner_id == owner_id)
+    return query.first()
 
 def update_presentation_title(db: Session, presentation: Presentation, new_title: str):
     presentation.title = new_title
@@ -29,3 +39,20 @@ def delete_presentation(db: Session, presentation: Presentation):
     db.delete(presentation)
     db.commit()
     return presentation
+
+def set_slide_activity(db: Session, slide: Slide, poll_data: PollCreate):
+    """
+    Menyimpan konfigurasi polling ke slide yang spesifik.
+    """
+    # Tandai slide ini sebagai slide interaktif dengan tipe 'poll'
+    slide.interactive_type = 'poll'
+    
+    # Simpan pertanyaan dan opsi ke dalam kolom JSON 'settings'
+    slide.settings = {
+        "question": poll_data.question,
+        "options": poll_data.options
+    }
+    
+    db.commit()
+    db.refresh(slide)
+    return slide
