@@ -4,6 +4,10 @@ export const getPresentations = () => {
     return api.get('/presentations');
 };
 
+export const getPresentationById = (id) => {
+    return api.get(`/presentations/${id}`);
+};
+
 export const createPresentation = (title) => {
     return api.post('/presentations/', { title });
 };
@@ -25,6 +29,10 @@ export const uploadPdf = (id, file) => {
             'Content-Type': 'multipart/form-data',
         },
     });
+};
+
+export const addActivityToSlide = (slideId, pollData) => {
+    return api.post(`/presentations/slides/${slideId}/activity`, pollData);
 };
 
 export const createSession = (id) => {

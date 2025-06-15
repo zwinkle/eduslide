@@ -23,7 +23,7 @@ const RegisterPage = () => {
     try {
       await register({ name, email, password, role });
       setSuccess('Registration successful! Please log in.');
-      setTimeout(() => navigate('/login'), 2000); // Redirect ke login setelah 2 detik
+      setTimeout(() => navigate('/login'), 1000);
     } catch (err) {
       setError('Failed to register. Email may already be in use.');
       console.error(err);
