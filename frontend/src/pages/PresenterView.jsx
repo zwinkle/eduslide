@@ -229,23 +229,29 @@ const PresenterView = () => {
     if (!isStarted) {
         const qrCodeUrl = `${api.defaults.baseURL}/presentations/sessions/${sessionCode}/qr`;
         return (
-            <div className="flex h-screen bg-gray-200">
-                <div className="w-2/3 flex flex-col items-center justify-center p-8">
+            <div className="flex h-screen bg-gray-200 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+                <div className="absolute top-4 right-4 flex gap-4">
+                    <ThemeToggleButton />
+                    <button onClick={() => navigate('/dashboard')} className="px-4 py-2 text-sm bg-white dark:bg-gray-700 rounded-lg shadow-sm hover:bg-gray-100 dark:hover:bg-gray-600">
+                        Cancel
+                    </button>
+                </div>
+                <div className="w-full md:w-2/3 flex flex-col items-center justify-center p-8">
                     <h1 className="text-3xl font-bold text-gray-800">Lobby Room</h1>
                     <p className="text-lg text-gray-600 mt-2">"{presentation?.title}"</p>
-                    <div className="mt-8 flex items-center gap-8 bg-white p-8 rounded-lg shadow-md">
+                    <div className="mt-8 flex flex-col md:flex-row items-center justify-center gap-8 bg-white dark:bg-gray-700 p-8 rounded-lg shadow-md">
                         <div className="text-center">
                             <p className="text-gray-500">Share this code:</p>
                             <p className="text-6xl font-bold tracking-widest my-2 text-blue-600">{sessionCode}</p>
                         </div>
-                        <div className="border-l-2 pl-8">
+                        <div className="border-t-2 md:border-t-0 md:border-l-2 pt-8 md:pt-0 md:pl-8">
                              <p className="text-gray-500 text-center mb-2">Or scan QR code:</p>
                              <img src={qrCodeUrl} alt={`QR Code for session ${sessionCode}`} className="w-40 h-40" />
                         </div>
                     </div>
                     <button onClick={handleStartPresentation} className="mt-8 px-10 py-4 text-2xl bg-green-500 text-white font-bold rounded-lg shadow-lg hover:bg-green-600">Start Presentation</button>
                 </div>
-                <aside className="w-1/3 bg-white p-6 border-l overflow-y-auto">
+                <aside className="w-full md:w-1/3 bg-white dark:bg-gray-800 p-6 border-l dark:border-gray-700 overflow-y-auto">
                     <h2 className="text-2xl font-semibold mb-4">Participants ({participants.length})</h2>
                     <ul className="space-y-2">
                         {participants.length > 0 ? (participants.map((name, index) => (<li key={index} className="bg-gray-100 p-3 rounded-md">{name}</li>))) : (<p className="text-gray-500">Waiting for participants to join...</p>)}
