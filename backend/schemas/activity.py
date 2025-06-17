@@ -1,13 +1,21 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List
 
-# Skema ini mendefinisikan data yang dibutuhkan untuk membuat sebuah polling.
+class QuizCreate(BaseModel):
+    question: str = Field(..., min_length=1, max_length=255)
+    options: List[str] = Field(..., min_items=2, max_items=8)
+    correct_answer: str # Jawaban yang benar harus sama persis dengan salah satu teks di options
+
+    # Validator untuk memastikan jawaban yang benar ada di dalam daftar pilihan
+    @validator('correct_answer')
+    def correct_answer_must_be_in_options(cls, v, values):
+        if 'options' in values and v not in values['options']:
+            raise ValueError('Correct answer must be one of the options')
+        return v
+
 class PollCreate(BaseModel):
     question: str = Field(..., min_length=1, max_length=255)
     options: List[str] = Field(..., min_items=2, max_items=8)
 
-# Contoh data yang akan dikirim frontend:
-# {
-#   "question": "Apa ibukota Indonesia?",
-#   "options": ["Jakarta", "Bandung", "Surabaya"]
-# }
+class WordCloudCreate(BaseModel):
+    question: str = Field(..., min_length=1, max_length=255)

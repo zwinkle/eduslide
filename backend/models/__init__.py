@@ -4,3 +4,4 @@ from .user import User
 from .presentation import Presentation
 from .slide import Slide
 from .session import Session
+from .score import Score

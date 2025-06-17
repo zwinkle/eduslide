@@ -16,7 +16,7 @@ class PresentationDisplay(PresentationBase):
     created_at: datetime
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # Skema untuk menampilkan presentasi beserta semua slidenya
 class PresentationWithSlides(PresentationDisplay):

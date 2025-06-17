@@ -14,7 +14,7 @@ from ..models.user import User
 from ..models.slide import Slide
 from ..schemas.presentation import PresentationCreate, PresentationDisplay, PresentationWithSlides
 from ..schemas.session import SessionDisplay
-from ..schemas.activity import PollCreate
+from ..schemas.activity import QuizCreate, PollCreate, WordCloudCreate
 from ..schemas.slide import SlideDisplay
 from ..crud import presentation as crud_presentation
 from ..crud import session as crud_session
@@ -157,6 +157,24 @@ def get_session_qr_code(session_code: str):
     buf.seek(0)
     return StreamingResponse(buf, media_type="image/png")
 
+@router.post("/slides/{slide_id}/quiz", response_model=SlideDisplay)
+def add_quiz_activity_to_slide(
+    slide_id: uuid.UUID,
+    quiz_data: QuizCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    slide = db.query(Slide).filter(Slide.id == slide_id).first()
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+
+    presentation = crud_presentation.get_presentation_by_id(db, slide.presentation_id, owner_id=current_user.id)
+    if not presentation:
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this slide")
+
+    updated_slide = crud_presentation.set_slide_quiz(db, slide, quiz_data)
+    return updated_slide
+
 @router.post("/slides/{slide_id}/activity", response_model=SlideDisplay)
 def add_activity_to_slide(
     slide_id: uuid.UUID,
@@ -185,4 +203,22 @@ def add_activity_to_slide(
 
     # Jika aman, panggil fungsi CRUD untuk menyimpan data aktivitas
     updated_slide = crud_presentation.set_slide_activity(db, slide, poll_data)
+    return updated_slide
+
+@router.post("/slides/{slide_id}/wordcloud", response_model=SlideDisplay)
+def add_wordcloud_activity_to_slide(
+    slide_id: uuid.UUID,
+    wordcloud_data: WordCloudCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    slide = db.query(Slide).filter(Slide.id == slide_id).first()
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+
+    presentation = crud_presentation.get_presentation_by_id(db, slide.presentation_id, owner_id=current_user.id)
+    if not presentation:
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this slide")
+
+    updated_slide = crud_presentation.set_slide_wordcloud(db, slide, wordcloud_data)
     return updated_slide

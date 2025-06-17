@@ -19,7 +19,7 @@ class UserDisplay(UserBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True # Untuk membaca data dari model SQLAlchemy
+        from_attributes = True
 
 class LoginRequest(BaseModel):
     email: EmailStr

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from ..models.presentation import Presentation
 from ..models.slide import Slide
 from ..schemas.presentation import PresentationCreate
-from ..schemas.activity import PollCreate
+from ..schemas.activity import QuizCreate, PollCreate, WordCloudCreate
 
 def create_presentation(db: Session, presentation: PresentationCreate, owner_id: uuid.UUID):
     db_presentation = Presentation(
@@ -40,6 +40,17 @@ def delete_presentation(db: Session, presentation: Presentation):
     db.commit()
     return presentation
 
+def set_slide_quiz(db: Session, slide: Slide, quiz_data: QuizCreate):
+    slide.interactive_type = 'quiz'
+    slide.settings = {
+        "question": quiz_data.question,
+        "options": quiz_data.options,
+        "correct_answer": quiz_data.correct_answer
+    }
+    db.commit()
+    db.refresh(slide)
+    return slide
+
 def set_slide_activity(db: Session, slide: Slide, poll_data: PollCreate):
     """
     Menyimpan konfigurasi polling ke slide yang spesifik.
@@ -53,6 +64,13 @@ def set_slide_activity(db: Session, slide: Slide, poll_data: PollCreate):
         "options": poll_data.options
     }
     
+    db.commit()
+    db.refresh(slide)
+    return slide
+
+def set_slide_wordcloud(db: Session, slide: Slide, wordcloud_data: WordCloudCreate):
+    slide.interactive_type = 'word_cloud'
+    slide.settings = {"question": wordcloud_data.question}
     db.commit()
     db.refresh(slide)
     return slide
