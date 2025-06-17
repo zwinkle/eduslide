@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Animasi untuk kemunculan kata */
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Style dasar untuk setiap kata di Word Cloud */
+  .word {
+    cursor: pointer;
+    animation: fadeIn 0.5s ease-out;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* Efek saat mouse diarahkan ke sebuah kata */
+  .word:hover {
+    transform: scale(1.15) !important; /* Paksa override transform dari d3 */
+    filter: brightness(1.2);
+  }
+  

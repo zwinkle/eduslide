@@ -31,8 +31,16 @@ export const uploadPdf = (id, file) => {
     });
 };
 
+export const addQuizActivity = (slideId, quizData) => {
+    return api.post(`/presentations/slides/${slideId}/quiz`, quizData);
+};
+
 export const addActivityToSlide = (slideId, pollData) => {
     return api.post(`/presentations/slides/${slideId}/activity`, pollData);
+};
+
+export const addWordCloudActivity = (slideId, questionData) => {
+    return api.post(`/presentations/slides/${slideId}/wordcloud`, questionData);
 };
 
 export const createSession = (id) => {

@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PresentationList from '../components/PresentationList';
+import ThemeToggleButton from '../components/ThemeToggleButton';
 
 const TeacherDashboard = () => {
   const { user, logout } = useAuth();
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-blue-600">EduSlide</h1>
-          <div>
-            <span className="text-gray-700 mr-4">Hello, {user?.name} ({user?.role})</span>
+          <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400">EduSlide</h1>
+          <div className="flex items-center gap-4">
+            <span className="text-gray-700 dark:text-gray-300 hidden sm:inline">Hello, {user?.name}</span>
             <button 
               onClick={logout}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm">
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+            >
               Logout
             </button>
+            <ThemeToggleButton />
           </div>
         </nav>
       </header>
@@ -32,7 +35,6 @@ const TeacherDashboard = () => {
               + Create New Presentation
             </button>
           </div>
-          <p className="mt-2 text-gray-600">Welcome, {user?.name}!</p>
           <PresentationList 
             isCreateModalOpen={isCreateModalOpen}
             setCreateModalOpen={setCreateModalOpen}
