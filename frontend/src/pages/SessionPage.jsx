@@ -60,42 +60,60 @@ const SessionPage = () => {
         const element = slideContainerRef.current;
         if (!element) return;
 
+        // Fungsi untuk memperbarui ukuran
         const updateSize = () => {
             const rect = element.getBoundingClientRect();
             if (rect.width > 0 && rect.height > 0) {
-                setContainerSize({ width: rect.width, height: rect.height });
+                setContainerSize({ 
+                    width: rect.width, 
+                    height: rect.height 
+                });
             }
         };
 
         // Buat ResizeObserver
-        resizeObserverRef.current = new ResizeObserver(updateSize);
-        resizeObserverRef.current.observe(element);
+        const resizeObserver = new ResizeObserver(updateSize);
+        resizeObserver.observe(element);
 
         // Panggil sekali untuk set ukuran awal
         updateSize();
 
-        // Juga dengar event resize window (untuk jaga-jaga)
-        window.addEventListener('resize', updateSize);
-
         return () => {
-            if (resizeObserverRef.current) {
-                resizeObserverRef.current.unobserve(element);
-            }
-            window.removeEventListener('resize', updateSize);
+            resizeObserver.disconnect();
         };
+    }, []);
+
+    // Tambahkan resize listener untuk window (jaga-jaga)
+    useEffect(() => {
+        const handleResize = () => {
+            if (slideContainerRef.current) {
+                const rect = slideContainerRef.current.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    setContainerSize({ 
+                        width: rect.width, 
+                        height: rect.height 
+                    });
+                }
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     // Ukur ulang saat currentPage berubah
     useEffect(() => {
-        // Beri sedikit delay untuk memastikan DOM sudah diupdate
         const timer = setTimeout(() => {
             if (slideContainerRef.current) {
                 const rect = slideContainerRef.current.getBoundingClientRect();
                 if (rect.width > 0 && rect.height > 0) {
-                    setContainerSize({ width: rect.width, height: rect.height });
+                    setContainerSize({ 
+                        width: rect.width, 
+                        height: rect.height 
+                    });
                 }
             }
-        }, 100);
+        }, 50); // Waktu lebih singkat
 
         return () => clearTimeout(timer);
     }, [currentPage]);
@@ -303,15 +321,20 @@ const SessionPage = () => {
         
         // Tampilan Bubble Quiz (z-index 20)
         if (activeBubbleQuiz) {
+            // Ensure correctAreas is always an array of objects
+            const correctAreas = Array.isArray(activeBubbleQuiz?.correct_areas)
+                ? activeBubbleQuiz.correct_areas.map(area =>
+                    typeof area === 'string' ? JSON.parse(area) : area
+                  )
+                : [];
             return (
                 <div className="absolute top-0 left-0 w-full h-full z-20">
                     <BubbleQuizDisplay
                         clicks={bubbleQuizClicks}
-                        correctAreas={activeBubbleQuiz?.correct_areas || []}
+                        correctAreas={correctAreas}
                         width={containerSize.width}
                         height={containerSize.height}
                     />
-                    
                     {!hasClickedBubbleQuiz && (
                         <>
                             <div className="absolute inset-0 bg-blue-500/20 border-4 border-blue-400 animate-pulse cursor-pointer" />
@@ -449,8 +472,8 @@ const SessionPage = () => {
             <main className="flex-grow flex items-center justify-center">
                 <div 
                     ref={slideContainerRef} 
-                    className="w-full max-w-6xl aspect-video bg-black flex items-center justify-center relative"
-                    style={{ minHeight: '400px' }}
+                    className="w-full max-w-5xl aspect-video min-h-[200px] bg-black flex items-center justify-center relative"
+                    // style={{ border: '2px solid red' }}
                 >
                     <img 
                         src={slideImageUrl} 

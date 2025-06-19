@@ -98,7 +98,7 @@ const BubbleQuizDisplay = ({ clicks = [], correctAreas = [], width, height }) =>
                             />
                             <Text
                                 text={String(bubble.count)}
-                                fontSize={Math.max(10, typeof bubble.displayRadius === 'number' && !isNaN(bubble.displayRadius) ? bubble.displayRadius * 0.7 : 10)}
+                                fontSize={Math.max(4, typeof bubble.displayRadius === 'number' && !isNaN(bubble.displayRadius) ? bubble.displayRadius * 0.7 : 10)}
                                 fill="white"
                                 fontStyle="bold"
                                 align="center"

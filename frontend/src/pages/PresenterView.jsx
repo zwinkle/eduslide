@@ -353,7 +353,12 @@ const PresenterView = () => {
                     )}
                     {isBubbleQuizActive && (
                         <div className="absolute top-0 left-0 w-full h-full z-10">
-                            <BubbleQuizDisplay clicks={bubbleQuizClicks} correctAreas={currentSlide?.settings?.correct_areas || []} width={canvasSize.width} height={canvasSize.height}/>
+                            <BubbleQuizDisplay
+                                clicks={bubbleQuizClicks}
+                                correctAreas={currentSlide?.settings?.correct_areas || []}
+                                width={canvasSize.width}
+                                height={canvasSize.height}
+                            />
                         </div>
                     )}
                 </div>
