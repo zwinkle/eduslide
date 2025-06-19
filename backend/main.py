@@ -384,11 +384,15 @@ async def submit_bubble_click(sid, data):
             })
 
         # Beri skor jika jawaban benar
-        if is_correct:
-            session = crud_session.get_session_by_code(db, session_code)
-            if session:
-                crud_score.add_points(db, session.id, sid, student_name, 75) # +75 poin
-                print(f"--- BUBBLE_QUIZ_CORRECT: {student_name} got 75 points. ---")
+        session = crud_session.get_session_by_code(db, session_code)
+        if is_correct and session:
+            crud_score.add_points(db, session.id, sid, student_name, 75)
+            print(f"--- BUBBLE_QUIZ_CORRECT: {student_name} got 75 points. ---")
+
+        if session:
+            leaderboard = crud_score.get_leaderboard(db, session.id)
+            leaderboard_data = [ScoreDisplay.from_orm(s).dict() for s in leaderboard]
+            await sio.emit('update_leaderboard', leaderboard_data, room=session_code)
         
         # Siarkan semua data klik dan leaderboard terbaru
         all_clicks = bubble_quiz_results[session_code][slide_id]
