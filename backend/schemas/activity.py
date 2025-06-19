@@ -19,3 +19,12 @@ class PollCreate(BaseModel):
 
 class WordCloudCreate(BaseModel):
     question: str = Field(..., min_length=1, max_length=255)
+
+class BubbleArea(BaseModel):
+    x: float = Field(..., ge=0, le=1)  # Koordinat x relatif (0-1)
+    y: float = Field(..., ge=0, le=1)  # Koordinat y relatif (0-1)
+    r: float = Field(..., gt=0, le=0.5) # Radius relatif (0-0.5)
+
+class BubbleQuizCreate(BaseModel):
+    question: str = Field(..., min_length=1, max_length=255)
+    correct_areas: List[BubbleArea] = Field(..., min_items=1)

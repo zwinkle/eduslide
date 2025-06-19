@@ -52,6 +52,7 @@ app.add_middleware(
 session_participants = {}
 poll_results = {}
 wordcloud_results = {}
+bubble_quiz_results = {}
 
 @sio.event
 async def connect(sid, environ):
@@ -226,6 +227,7 @@ async def submit_vote(sid, data):
 
 @sio.on('start_wordcloud')
 async def start_wordcloud(sid, data):
+    print("Received start_wordcloud:", data)
     session_code = data.get('session_code')
     slide_id = str(data.get('slide_id'))
     if not session_code or not slide_id: return
@@ -240,6 +242,7 @@ async def start_wordcloud(sid, data):
         slide = db.query(Slide).filter(Slide.id == slide_id).first()
         if slide and slide.interactive_type == 'word_cloud':
             print(f"--- START_WORDCLOUD: In room {session_code} ---")
+            print("Emitting wordcloud_started with:", slide.settings)
             # Kirim pertanyaan ke semua siswa
             await sio.emit('wordcloud_started', slide.settings, room=session_code)
             # Kirim hasil awal (kosong)
@@ -321,6 +324,84 @@ async def clear_canvas(sid, data):
     if not session_code or not slide_id: return
     print(f"--- CLEAR_CANVAS: In room {session_code} for slide {slide_id} ---")
     await sio.emit('canvas_cleared', {'slide_id': slide_id}, room=session_code, skip_sid=sid)
+
+@sio.on('start_bubble_quiz')
+async def start_bubble_quiz(sid, data):
+    print("Received start_bubble_quiz:", data)
+    session_code = data.get('session_code')
+    slide_id = str(data.get('slide_id'))
+    if not session_code or not slide_id: return
+
+    # Inisialisasi tempat penyimpanan klik untuk kuis ini
+    if session_code not in bubble_quiz_results:
+        bubble_quiz_results[session_code] = {}
+    bubble_quiz_results[session_code][slide_id] = []
+
+    db = SessionLocal()
+    try:
+        slide = db.query(Slide).filter(Slide.id == slide_id).first()
+        if slide and slide.interactive_type == 'bubble_quiz':
+            print(f"--- START_BUBBLE_QUIZ: In room {session_code} ---")
+            # Kirim pertanyaan ke semua siswa
+            await sio.emit('bubble_quiz_started', {
+                "question": slide.settings.get('question'),
+                "correct_areas": slide.settings.get('correct_areas', [])
+            }, room=session_code)
+    finally:
+        db.close()
+
+@sio.on('submit_bubble_click')
+async def submit_bubble_click(sid, data):
+    session_code = data.get('session_code')
+    slide_id = str(data.get('slide_id'))
+    point = data.get('point') # {x, y} dalam format relatif
+    student_name = session_participants.get(session_code, {}).get(sid)
+
+    if not all([session_code, slide_id, point, student_name]): return
+
+    db = SessionLocal()
+    try:
+        slide = db.query(Slide).filter(Slide.id == slide_id).first()
+        if not slide or slide.interactive_type != 'bubble_quiz':
+            return
+            
+        # Logika Pengecekan Jawaban Benar
+        is_correct = False
+        correct_areas = slide.settings.get('correct_areas', [])
+        for area in correct_areas:
+            # Hitung jarak antara titik klik dan pusat lingkaran (Teorema Pythagoras)
+            distance = ((point['x'] - area['x'])**2 + (point['y'] - area['y'])**2)**0.5
+            if distance <= area['r']:
+                is_correct = True
+                break
+        
+        # Tambahkan data klik ke daftar
+        if session_code in bubble_quiz_results and slide_id in bubble_quiz_results[session_code]:
+            bubble_quiz_results[session_code][slide_id].append({
+                "name": student_name,
+                "point": {"x": point['x'], "y": point['y']},
+                "is_correct": is_correct
+            })
+
+        # Beri skor jika jawaban benar
+        if is_correct:
+            session = crud_session.get_session_by_code(db, session_code)
+            if session:
+                crud_score.add_points(db, session.id, sid, student_name, 75) # +75 poin
+                print(f"--- BUBBLE_QUIZ_CORRECT: {student_name} got 75 points. ---")
+        
+        # Siarkan semua data klik dan leaderboard terbaru
+        all_clicks = bubble_quiz_results[session_code][slide_id]
+        leaderboard = crud_score.get_leaderboard(db, session.id)
+        leaderboard_data = [ScoreDisplay.from_orm(s).dict() for s in leaderboard]
+        
+        await sio.emit('update_bubble_quiz_results', {'clicks': all_clicks}, room=session_code)
+        await sio.emit('update_leaderboard', leaderboard_data, room=session_code)
+
+    finally:
+        print("Received bubble click:", point)
+        print("Correct areas:", correct_areas)
+        db.close()
 
 @sio.on('change_slide')
 async def change_slide(sid, data):

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from ..models.presentation import Presentation
 from ..models.slide import Slide
 from ..schemas.presentation import PresentationCreate
-from ..schemas.activity import QuizCreate, PollCreate, WordCloudCreate
+from ..schemas.activity import QuizCreate, PollCreate, WordCloudCreate, BubbleQuizCreate
 
 def create_presentation(db: Session, presentation: PresentationCreate, owner_id: uuid.UUID):
     db_presentation = Presentation(
@@ -71,6 +71,14 @@ def set_slide_activity(db: Session, slide: Slide, poll_data: PollCreate):
 def set_slide_wordcloud(db: Session, slide: Slide, wordcloud_data: WordCloudCreate):
     slide.interactive_type = 'word_cloud'
     slide.settings = {"question": wordcloud_data.question}
+    db.commit()
+    db.refresh(slide)
+    return slide
+
+def set_slide_bubble_quiz(db: Session, slide: Slide, quiz_data: BubbleQuizCreate):
+    slide.interactive_type = 'bubble_quiz'
+    # Pydantic model perlu diubah ke dict sebelum disimpan ke JSONB
+    slide.settings = quiz_data.dict()
     db.commit()
     db.refresh(slide)
     return slide
