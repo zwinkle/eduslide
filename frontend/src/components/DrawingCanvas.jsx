@@ -70,6 +70,7 @@ const DrawingCanvas = ({ onDraw, lines, width, height, isReadOnly = false }) => 
                             points={line.points}
                             stroke={line.color}
                             strokeWidth={line.strokeWidth}
+                            opacity={line.tool === 'highlighter' ? 0.4 : 1}
                             tension={0.5}
                             lineCap="round"
                             lineJoin="round"

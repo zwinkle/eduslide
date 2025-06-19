@@ -37,7 +37,7 @@ const PresenterView = () => {
     const [drawings, setDrawings] = useState({});
     const slideContainerRef = useRef(null);
     const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-    const [tool, setTool] = useState({ tool: 'pen', color: '#000000', strokeWidth: 5 });
+    const [tool, setTool] = useState({ tool: 'pen', color: '#EF4444', strokeWidth: 5 });
     const [isBubbleQuizActive, setIsBubbleQuizActive] = useState(false);
     const [bubbleQuizClicks, setBubbleQuizClicks] = useState([]);
     const [pickerData, setPickerData] = useState(null);
