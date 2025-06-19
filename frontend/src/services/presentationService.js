@@ -43,6 +43,10 @@ export const addWordCloudActivity = (slideId, questionData) => {
     return api.post(`/presentations/slides/${slideId}/wordcloud`, questionData);
 };
 
+export const addBubbleQuizActivity = (slideId, quizData) => {
+    return api.post(`/presentations/slides/${slideId}/bubble-quiz`, quizData);
+};
+
 export const createSession = (id) => {
     return api.post(`/presentations/${id}/sessions`);
 };

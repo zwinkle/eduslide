@@ -21,9 +21,10 @@
     transition: all 0.2s ease-in-out;
   }
   
-  /* Efek saat mouse diarahkan ke sebuah kata */
   .word:hover {
-    transform: scale(1.15) !important; /* Paksa override transform dari d3 */
-    filter: brightness(1.2);
+    /* Hapus transform, ganti dengan filter */
+    filter: brightness(1.5);
+    /* Anda bisa tambahkan drop-shadow untuk efek 'glow' */
+    filter: brightness(1.5) drop-shadow(0 0 5px currentColor);
   }
   

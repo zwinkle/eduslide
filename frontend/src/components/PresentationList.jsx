@@ -7,6 +7,7 @@ import ManageSlidesModal from './ManageSlidesModal';
 import QuizCreationModal from './QuizCreationModal';
 import PollCreationModal from './PollCreationModal';
 import WordCloudCreationModal from './WordCloudCreationModal';
+import BubbleQuizCreationModal from './BubbleQuizCreationModal';
 
 const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
     const [presentations, setPresentations] = useState([]);
@@ -19,7 +20,8 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
     const [managingSlidesOf, setManagingSlidesOf] = useState(null);
     const [addingQuizTo, setAddingQuizTo] = useState(null); 
     const [addingPollTo, setAddingPollTo] = useState(null);
-    const [addingWordCloudTo, setAddingWordCloudTo] = useState(null); 
+    const [addingWordCloudTo, setAddingWordCloudTo] = useState(null);
+    const [addingBubbleQuizTo, setAddingBubbleQuizTo] = useState(null);
 
     const fileInputRef = useRef(null);
 
@@ -138,6 +140,19 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
         }
     };
 
+    const handleAddBubbleQuizSubmit = async (quizData) => {
+        if (!addingBubbleQuizTo) return;
+        try {
+            await presentationService.addBubbleQuizActivity(addingBubbleQuizTo.id, quizData);
+            setAddingBubbleQuizTo(null);
+            const response = await presentationService.getPresentationById(managingSlidesOf.id);
+            setManagingSlidesOf(response.data);
+            alert("Bubble Quiz added successfully!");
+        } catch (err) {
+            alert("Failed to add Bubble Quiz.");
+        }
+    };
+
     if (loading) return <p>Loading presentations...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
 
@@ -197,6 +212,7 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
                 onAddQuiz={(slide) => setAddingQuizTo(slide)}
                 onAddPoll={(slide) => setAddingPollTo(slide)}
                 onAddWordCloud={(slide) => setAddingWordCloudTo(slide)}
+                onAddBubbleQuiz={(slide) => setAddingBubbleQuizTo(slide)}
             />
             <QuizCreationModal
                 isOpen={!!addingQuizTo}
@@ -215,6 +231,12 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
                 onClose={() => setAddingWordCloudTo(null)}
                 onSubmit={handleAddWordCloudSubmit}
                 slide={addingWordCloudTo}
+            />
+            <BubbleQuizCreationModal
+                isOpen={!!addingBubbleQuizTo}
+                onClose={() => setAddingBubbleQuizTo(null)}
+                onSubmit={handleAddBubbleQuizSubmit}
+                slide={addingBubbleQuizTo}
             />
         </>
     );
