@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import ThemeToggleButton from '../components/ThemeToggleButton';
@@ -7,8 +7,14 @@ const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -23,9 +29,14 @@ const LoginPage = () => {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-            <div className="absolute top-4 right-4">
+            <header className="absolute top-0 right-0 p-6 flex items-center gap-4">
+                <Link to="/">
+                    <button className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+                        Go to Homepage
+                    </button>
+                </Link>
                 <ThemeToggleButton />
-            </div>
+            </header>
             <div className="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md w-96">
                 <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-gray-100">Login to EduSlide</h2>
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}

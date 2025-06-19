@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import * as sessionService from '../services/sessionService';
 import ThemeToggleButton from '../components/ThemeToggleButton';
+import { useAuth } from '../context/AuthContext';
 
 const PublicHomePage = () => {
+    const { isAuthenticated } = useAuth();
     const [sessionCode, setSessionCode] = useState('');
     const [studentName, setStudentName] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleJoinSession = async (e) => {
         e.preventDefault();
