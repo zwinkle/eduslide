@@ -2,6 +2,8 @@
 
 Platform presentasi interaktif modern untuk guru dan siswa, berbasis FastAPI (Python) dan React (Vite, Tailwind v3).
 
+---
+
 ## Fitur Utama
 - Upload & presentasi slide (PDF/PPT)
 - Aktivitas interaktif real-time: Kuis, Polling, Word Cloud, Bubble Quiz (klik gambar), Kanvas Gambar
