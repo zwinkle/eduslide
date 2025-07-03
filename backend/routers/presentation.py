@@ -8,6 +8,7 @@ from pdf2image import convert_from_path
 import io
 import qrcode
 from starlette.responses import StreamingResponse
+import os
 
 from ..database import get_db
 from ..models.user import User
@@ -26,7 +27,8 @@ router = APIRouter(
     tags=["Presentations"]
 )
 
-UPLOAD_DIRECTORY = Path("uploads")
+BASE_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent
+UPLOAD_DIRECTORY = BASE_DIR / "uploads"
 UPLOAD_DIRECTORY.mkdir(exist_ok=True)
 
 @router.post("/", response_model=PresentationDisplay, status_code=status.HTTP_201_CREATED)
@@ -83,6 +85,23 @@ def delete_presentation(
     crud_presentation.delete_presentation(db, presentation)
     return
 
+@router.delete("/slides/{slide_id}/activity", response_model=SlideDisplay)
+def delete_slide_activity(
+    slide_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    slide = db.query(Slide).filter(Slide.id == slide_id).first()
+    if not slide:
+        raise HTTPException(status_code=404, detail="Slide not found")
+
+    presentation = crud_presentation.get_presentation_by_id(db, slide.presentation_id, owner_id=current_user.id)
+    if not presentation:
+        raise HTTPException(status_code=403, detail="You do not have permission to edit this slide")
+
+    updated_slide = crud_presentation.remove_slide_activity(db, slide)
+    return updated_slide
+
 @router.post("/{presentation_id}/upload", response_model=PresentationWithSlides)
 def upload_pdf_and_create_slides(
     presentation_id: uuid.UUID,
@@ -118,11 +137,11 @@ def upload_pdf_and_create_slides(
             slide_image_path = presentation_upload_dir / f"slide_{i+1}.png"
             image.save(slide_image_path, "PNG")
             
-            # Buat entri slide di database
+            # Store only the relative web path in content_url
             new_slide = Slide(
                 presentation_id=presentation_id,
                 page_number=i+1,
-                content_url=str(slide_image_path) # Simpan path sebagai string
+                content_url=f"uploads/{presentation_id}/slide_{i+1}.png"
             )
             db.add(new_slide)
             

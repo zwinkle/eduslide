@@ -40,6 +40,13 @@ def delete_presentation(db: Session, presentation: Presentation):
     db.commit()
     return presentation
 
+def remove_slide_activity(db: Session, slide: Slide):
+    slide.interactive_type = None
+    slide.settings = None
+    db.commit()
+    db.refresh(slide)
+    return slide
+
 def set_slide_quiz(db: Session, slide: Slide, quiz_data: QuizCreate):
     slide.interactive_type = 'quiz'
     slide.settings = {
