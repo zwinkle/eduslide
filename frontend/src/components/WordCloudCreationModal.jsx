@@ -5,10 +5,12 @@ const WordCloudCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
     const [question, setQuestion] = useState('');
 
     useEffect(() => {
-        if(isOpen) {
+        if (isOpen && slide?.interactive_type === 'word_cloud') {
+            setQuestion(slide.settings.question || '');
+        } else if (isOpen) {
             setQuestion('');
         }
-    }, [isOpen]);
+    }, [isOpen, slide]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -16,20 +18,18 @@ const WordCloudCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
         onClose();
     };
 
-    if (!isOpen) return null;
-
     return (
         <Modal 
             isOpen={isOpen} 
             onClose={onClose} 
-            title={`Add Word Cloud to Slide ${slide?.page_number}`}
+            title={slide?.interactive_type === 'word_cloud' ? `Edit Word Cloud on Slide ${slide.page_number}` : `Add Word Cloud to Slide ${slide?.page_number}`}
         >
             <form onSubmit={handleSubmit}>
                 <div className="mb-4">
-                    <label htmlFor="wc-question" className="block text-gray-700 dark:text-gray-300 mb-2">Prompt Question</label>
+                    <label htmlFor="wc-question-edit" className="block text-gray-700 dark:text-gray-300 mb-2">Prompt Question</label>
                     <input
                         type="text"
-                        id="wc-question"
+                        id="wc-question-edit"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         placeholder="e.g., What one word describes this topic?"

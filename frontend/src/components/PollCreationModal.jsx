@@ -5,12 +5,18 @@ const PollCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
     const [question, setQuestion] = useState('');
     const [options, setOptions] = useState(['', '']);
 
+    // PERBAIKAN: Gunakan useEffect untuk mengisi form saat mengedit
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && slide?.interactive_type === 'poll') {
+            // Jika ada data polling di slide, isi form
+            setQuestion(slide.settings.question || '');
+            setOptions(slide.settings.options || ['', '']);
+        } else if (isOpen) {
+            // Jika tidak ada data (mode create), kosongkan form
             setQuestion('');
             setOptions(['', '']);
         }
-    }, [isOpen]);
+    }, [isOpen, slide]);
 
     const handleOptionChange = (index, value) => {
         const newOptions = [...options];
@@ -39,16 +45,14 @@ const PollCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
             return;
         }
         onSubmit({ question, options: validOptions });
-        onClose(); // Tutup modal setelah submit
+        onClose();
     };
-
-    if (!isOpen) return null;
 
     return (
         <Modal 
             isOpen={isOpen} 
             onClose={onClose} 
-            title={`Add Poll to Slide ${slide?.page_number}`}
+            title={slide?.interactive_type === 'poll' ? `Edit Poll on Slide ${slide.page_number}` : `Add Poll to Slide ${slide?.page_number}`}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div>

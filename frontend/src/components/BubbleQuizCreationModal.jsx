@@ -1,23 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Stage, Layer, Image, Circle } from 'react-konva';
-import useImage from 'use-image';
 import Modal from './Modal';
-import api from '../services/api';
+import api from '../services/api'; // Kita akan gunakan instance axios kita
 
 const BubbleQuizCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
     const [question, setQuestion] = useState('');
     const [areas, setAreas] = useState([]);
     
-    const imageUrl = slide?.content_url ? `${api.defaults.baseURL}/${slide.content_url}` : null;
-    const [imageElement, imageStatus] = useImage(imageUrl, 'anonymous');
+    // State BARU untuk menangani gambar secara manual
+    const [imageElement, setImageElement] = useState(null);
+    const [imageStatus, setImageStatus] = useState('idle');
 
     const containerRef = useRef(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
 
+    // useEffect BARU untuk memuat gambar menggunakan axios/fetch
     useEffect(() => {
-        // Logika ini memastikan ukuran kanvas selalu sesuai dengan rasio aspek gambar
-        // di dalam kontainer yang tersedia.
-        if (isOpen && imageStatus === 'loaded' && containerRef.current) {
+        if (isOpen && slide?.content_url) {
+            setImageStatus('loading');
+            const imageUrl = `${api.defaults.baseURL}/${slide.content_url}`;
+            
+            // Gunakan fetch untuk mengambil gambar sebagai blob
+            fetch(imageUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const imageObj = new window.Image();
+                    imageObj.src = URL.createObjectURL(blob);
+                    imageObj.onload = () => {
+                        setImageElement(imageObj);
+                        setImageStatus('loaded');
+                    };
+                    imageObj.onerror = () => {
+                        setImageStatus('failed');
+                    };
+                })
+                .catch(error => {
+                    console.error('Error fetching image:', error);
+                    setImageStatus('failed');
+                });
+
+        } else {
+            setImageElement(null);
+            setImageStatus('idle');
+        }
+    }, [isOpen, slide?.content_url]); // Bergantung pada isOpen dan URL gambar
+
+    // useEffect untuk menghitung ukuran kanvas setelah gambar dimuat
+    useEffect(() => {
+        if (imageStatus === 'loaded' && containerRef.current) {
             const containerWidth = containerRef.current.offsetWidth;
             const scale = containerWidth / imageElement.width;
             setSize({
@@ -25,14 +60,20 @@ const BubbleQuizCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
                 height: imageElement.height * scale
             });
         }
-    }, [isOpen, imageStatus, imageElement]);
+    }, [imageStatus, imageElement]);
     
+    // Reset form saat modal dibuka
     useEffect(() => {
         if (isOpen) {
-            setQuestion('');
-            setAreas([]);
+            if (slide?.settings?.question && slide?.settings?.correct_areas) {
+                setQuestion(slide.settings.question);
+                setAreas(slide.settings.correct_areas);
+            } else {
+                setQuestion('');
+                setAreas([]);
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, slide]);
 
     const handleStageClick = (e) => {
         if (areas.length >= 5) {
@@ -104,13 +145,13 @@ const BubbleQuizCreationModal = ({ isOpen, onClose, onSubmit, slide }) => {
                         </Stage>
                     ) : (
                         <div className="w-full aspect-video flex items-center justify-center">
-                            <p className="text-gray-500">{imageStatus === 'loading' ? 'Loading image...' : 'Image could not be loaded.'}</p>
+                            <p className="text-gray-500">{imageStatus === 'loading' ? 'Loading image...' : 'Could not load image.'}</p>
                         </div>
                     )}
                 </div>
                 
                 <div className="flex justify-between items-center">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Click on the image to add a correct area.</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Click on the image to add or remove areas.</p>
                     {areas.length > 0 && (
                         <button type="button" onClick={removeLastArea} className="text-sm text-red-600 hover:underline">
                             Remove Last Area

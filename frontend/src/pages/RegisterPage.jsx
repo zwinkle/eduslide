@@ -28,14 +28,13 @@ const RegisterPage = () => {
             return;
         }
         try {
-            await register({ name, email, password, role });
-            setSuccess('Registration successful! Please log in.');
+            await register({ name, email, password });
+            setSuccess('Registration successful! Redirecting to login...');
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
             setError('Failed to register. Email may already be in use.');
         }
     };
-
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
             <header className="absolute top-0 right-0 p-6 flex items-center gap-4">
@@ -80,17 +79,6 @@ const RegisterPage = () => {
                             onChange={(e) => setPassword(e.target.value)} 
                             required 
                         />
-                    </div>
-                    <div className="mb-6">
-                        <label className="block text-gray-700 dark:text-gray-300">I am a...</label>
-                        <select 
-                            className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100" 
-                            value={role} 
-                            onChange={(e) => setRole(e.target.value)}
-                        >
-                            <option value="student">Student</option>
-                            <option value="teacher">Teacher</option>
-                        </select>
                     </div>
                     <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Register</button>
                 </form>

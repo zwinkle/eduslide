@@ -5,6 +5,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { Stage } from 'react-konva';
 import io from 'socket.io-client';
 import api from '../services/api';
+import { v4 as uuidv4 } from 'uuid';
 import * as sessionService from '../services/sessionService';
 import * as presentationService from '../services/presentationService';
 import ThemeToggleButton from '../components/ThemeToggleButton';
@@ -22,6 +23,7 @@ const SessionPage = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const studentName = location.state?.name || 'Guest';
+    const studentId = location.state?.studentId || uuidv4();
 
     // State utama
     const [presentation, setPresentation] = useState(null);
@@ -141,7 +143,12 @@ const SessionPage = () => {
         socket.on('connect', () => {
             console.log('Socket connected:', socket.id);
             setIsConnected(true);
-            socket.emit('join_session', { session_code: sessionCode, name: studentName });
+            // PERBAIKAN: Kirim studentId saat bergabung
+            socket.emit('join_session', { 
+                session_code: sessionCode, 
+                name: studentName,
+                student_id: studentId // Kirim ID persisten
+            });
         });
         socket.on('disconnect', () => setIsConnected(false));
         socket.on('session_ended', (data) => { alert(data.message); navigate('/'); });
@@ -235,7 +242,7 @@ const SessionPage = () => {
                 socketRef.current.disconnect(); 
             }
         };
-    }, [sessionCode, studentName, navigate]);
+    }, [sessionCode, studentName, navigate, studentId]);
 
     // Handlers
     const handleLeaveSession = () => { 
@@ -246,23 +253,41 @@ const SessionPage = () => {
     const handleQuizSubmit = (answer) => {
         if (hasAnsweredQuiz || !socketRef.current) return;
         const currentSlide = presentation.slides.find(s => s.page_number === currentPage);
-        socketRef.current.emit('submit_quiz_answer', { session_code: sessionCode, slide_id: currentSlide.id, answer: answer, name: studentName, sid: socketRef.current.id });
+        socketRef.current.emit('submit_quiz_answer', { 
+            session_code: sessionCode, 
+            slide_id: currentSlide.id, 
+            answer: answer, 
+            name: studentName, 
+            student_id: studentId // TAMBAHKAN INI
+        });
         setHasAnsweredQuiz(true);
     };
-
+    
     const handleVoteSubmit = (option) => {
         if (hasVotedPoll || !socketRef.current) return;
         const currentSlide = presentation.slides.find(s => s.page_number === currentPage);
-        socketRef.current.emit('submit_vote', { session_code: sessionCode, slide_id: currentSlide.id, option: option, name: studentName, sid: socketRef.current.id });
+        socketRef.current.emit('submit_vote', { 
+            session_code: sessionCode, 
+            slide_id: currentSlide.id, 
+            option: option, 
+            name: studentName, 
+            student_id: studentId // TAMBAHKAN INI
+        });
         setHasVotedPoll(true);
     };
-
+    
     const handleWordSubmit = (e) => {
         e.preventDefault();
         const word = e.target.elements.word.value;
         if (!word.trim() || !socketRef.current) return;
         const currentSlide = presentation.slides.find(s => s.page_number === currentPage);
-        socketRef.current.emit('submit_word', { session_code: sessionCode, slide_id: currentSlide.id, word: word, name: studentName, sid: socketRef.current.id });
+        socketRef.current.emit('submit_word', { 
+            session_code: sessionCode, 
+            slide_id: currentSlide.id, 
+            word: word, 
+            name: studentName, 
+            student_id: studentId // TAMBAHKAN INI
+        });
         setSubmittedWord(true);
     };
     
@@ -273,13 +298,12 @@ const SessionPage = () => {
         const currentSlide = presentation?.slides.find(s => s.page_number === currentPage);
         if (!stage || !currentSlide) return;
         setHasClickedBubbleQuiz(true);
-        const normalizedPoint = { x: pos.x / stage.width(), y: pos.y / stage.height() };
         socketRef.current.emit('submit_bubble_click', {
             session_code: sessionCode,
             slide_id: currentSlide.id,
             name: studentName,
-            sid: socketRef.current.id,
-            point: normalizedPoint
+            student_id: studentId, // TAMBAHKAN INI
+            point: { x: pos.x / stage.width(), y: pos.y / stage.height() }
         });
     };
 
@@ -304,7 +328,7 @@ const SessionPage = () => {
         if (containerSize.width === 0 || containerSize.height === 0) {
             return null;
         }
-
+    
         // Tampilan Drawing Canvas (z-index 10)
         if (isDrawingActive) {
             return (
@@ -321,30 +345,18 @@ const SessionPage = () => {
         
         // Tampilan Bubble Quiz (z-index 20)
         if (activeBubbleQuiz) {
-            // Ensure correctAreas is always an array of objects
-            const correctAreas = Array.isArray(activeBubbleQuiz?.correct_areas)
-                ? activeBubbleQuiz.correct_areas.map(area =>
-                    typeof area === 'string' ? JSON.parse(area) : area
-                  )
-                : [];
             return (
                 <div className="absolute top-0 left-0 w-full h-full z-20">
                     <BubbleQuizDisplay
                         clicks={bubbleQuizClicks}
-                        correctAreas={correctAreas}
+                        correctAreas={[]}
                         width={containerSize.width}
                         height={containerSize.height}
                     />
                     {!hasClickedBubbleQuiz && (
                         <>
-                            <div className="absolute inset-0 bg-blue-500/20 border-4 border-blue-400 animate-pulse cursor-pointer" />
-                            <Stage 
-                                width={containerSize.width} 
-                                height={containerSize.height} 
-                                onClick={handleImageClick} 
-                                onTap={handleImageClick} 
-                                className="absolute top-0 left-0" 
-                            />
+                            <div className="absolute inset-0 bg-blue-500/20 border-4 border-blue-400 animate-pulse pointer-events-none" />
+                            <Stage width={containerSize.width} height={containerSize.height} onClick={handleImageClick} onTap={handleImageClick} className="absolute top-0 left-0 cursor-pointer" />
                         </>
                     )}
                 </div>
@@ -353,7 +365,7 @@ const SessionPage = () => {
         
         // Overlay lain yang menutupi seluruh layar (z-index 30)
         let overlayContent = null;
-
+    
         if (activePoll) {
             overlayContent = (
                 <>
@@ -413,22 +425,22 @@ const SessionPage = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center">
-                            {quizFeedback && (
+                        // PERBAIKAN UTAMA DI SINI
+                        <div className="text-center p-8 bg-gray-800/50 rounded-lg">
+                            {quizFeedback ? (
                                 <p className={`text-4xl font-bold ${quizFeedback.correct ? 'text-green-400' : 'text-red-500'}`}>
-                                    {quizFeedback.correct ? "Correct!" : "Incorrect"}
+                                    {quizFeedback.correct ? "Jawaban Benar!" : "Jawaban Salah"}
                                 </p>
+                            ) : (
+                                <p className="text-4xl font-bold text-gray-200">Menunggu...</p>
                             )}
-                            <p className="text-xl mt-4">Live Leaderboard</p>
-                            <div className="mt-4 w-full max-w-md bg-white/10 p-4 rounded-lg">
-                                <LeaderboardDisplay leaderboardData={leaderboardData} />
-                            </div>
+                            <p className="text-xl mt-4 text-gray-300">Terima kasih telah menjawab! Tunggu guru untuk melanjutkan.</p>
                         </div>
                     )}
                 </>
             );
         }
-
+    
         if (overlayContent) {
             return (
                 <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-8 animate-fade-in z-30">
@@ -436,7 +448,7 @@ const SessionPage = () => {
                 </div>
             );
         }
-
+    
         return null;
     };
 

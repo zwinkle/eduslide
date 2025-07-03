@@ -21,14 +21,21 @@ export const deletePresentation = (id) => {
     return api.delete(`/presentations/${id}`);
 };
 
-export const uploadPdf = (id, file) => {
+export const removeActivityFromSlide = (slideId) => {
+    return api.delete(`/presentations/slides/${slideId}/activity`);
+};
+
+export const uploadPdf = (presentationId, file, onUploadProgress) => {
     const formData = new FormData();
     formData.append('file', file);
-    return api.post(`/presentations/${id}/upload`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    return api.post(
+        `/presentations/${presentationId}/upload`,
+        formData,
+        {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress,
+        }
+    );
 };
 
 export const addQuizActivity = (slideId, quizData) => {

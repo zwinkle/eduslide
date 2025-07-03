@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import * as sessionService from '../services/sessionService';
 import ThemeToggleButton from '../components/ThemeToggleButton';
 import { useAuth } from '../context/AuthContext';
@@ -24,10 +25,17 @@ const PublicHomePage = () => {
             setError('Please enter a session code and your name.');
             return;
         }
-
+    
         try {
             await sessionService.validateSession(sessionCode);
-            navigate(`/session/${sessionCode}`, { state: { name: studentName } });
+            
+            // PERBAIKAN: Buat dan simpan ID unik untuk siswa
+            const studentId = sessionStorage.getItem('studentId') || uuidv4();
+            sessionStorage.setItem('studentId', studentId);
+    
+            // Kirim nama dan studentId ke SessionPage
+            navigate(`/session/${sessionCode}`, { state: { name: studentName.trim(), studentId } });
+    
         } catch (err) {
             setError('Invalid session code. Please try again.');
         }

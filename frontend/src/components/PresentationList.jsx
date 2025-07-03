@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import * as presentationService from '../services/presentationService';
 import PresentationModal from './PresentationModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import ConfirmationModal from './ConfirmationModal';
 import ManageSlidesModal from './ManageSlidesModal';
 import QuizCreationModal from './QuizCreationModal';
 import PollCreationModal from './PollCreationModal';
 import WordCloudCreationModal from './WordCloudCreationModal';
 import BubbleQuizCreationModal from './BubbleQuizCreationModal';
+import { Spin, message, Progress } from 'antd';
 
 const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
     const [presentations, setPresentations] = useState([]);
@@ -17,6 +19,7 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
 
     const [editingPresentation, setEditingPresentation] = useState(null);
     const [deletingPresentation, setDeletingPresentation] = useState(null);
+    const [deletingActivityFrom, setDeletingActivityFrom] = useState(null);
     const [managingSlidesOf, setManagingSlidesOf] = useState(null);
     const [addingQuizTo, setAddingQuizTo] = useState(null); 
     const [addingPollTo, setAddingPollTo] = useState(null);
@@ -24,6 +27,9 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
     const [addingBubbleQuizTo, setAddingBubbleQuizTo] = useState(null);
 
     const fileInputRef = useRef(null);
+
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const fetchPresentations = async () => {
         setLoading(true);
@@ -59,6 +65,20 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
         setDeletingPresentation(null);
     };
 
+    const handleActivityDelete = async () => {
+        if (!deletingActivityFrom) return;
+        try {
+            await presentationService.removeActivityFromSlide(deletingActivityFrom.id);
+            setDeletingActivityFrom(null);
+            // Muat ulang data untuk melihat perubahan
+            const response = await presentationService.getPresentationById(managingSlidesOf.id);
+            setManagingSlidesOf(response.data);
+            alert("Activity removed successfully!");
+        } catch (err) {
+            alert("Failed to remove activity.");
+        }
+    };
+
     const handleUploadClick = (presentation) => {
         fileInputRef.current.dataset.presentationId = presentation.id;
         fileInputRef.current.click();
@@ -68,18 +88,28 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
         const file = event.target.files[0];
         const presentationId = fileInputRef.current.dataset.presentationId;
         if (file && presentationId) {
+            setUploading(true);
+            setUploadProgress(0);
             try {
-                await presentationService.uploadPdf(presentationId, file);
-                alert("File uploaded successfully!");
-                // Muat ulang data presentasi yang sedang dikelola jika modalnya terbuka
+                await presentationService.uploadPdf(
+                    presentationId,
+                    file,
+                    (progressEvent) => {
+                        const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                        setUploadProgress(percent);
+                    }
+                );
+                message.success("File uploaded successfully!");
                 if (managingSlidesOf) {
                     const response = await presentationService.getPresentationById(presentationId);
                     setManagingSlidesOf(response.data);
                 }
-                fetchPresentations(); // Muat ulang daftar utama
+                fetchPresentations();
             } catch (err) {
-                alert("Upload failed.");
+                message.error("Upload failed.");
             } finally {
+                setUploading(false);
+                setUploadProgress(0);
                 event.target.value = null;
             }
         }
@@ -158,6 +188,14 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
 
     return (
         <>
+            {uploading && (
+                <div className="fixed inset-0 flex flex-col items-center justify-center bg-black bg-opacity-30 z-50">
+                    <Spin size="large" tip="Uploading..." />
+                    <div className="w-64 mt-4">
+                        <Progress percent={uploadProgress} status="active" />
+                    </div>
+                </div>
+            )}
             <div className="mt-8">
                 <h2 className="text-2xl font-semibold mb-4">Your Presentations</h2>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf"/>
@@ -213,7 +251,16 @@ const PresentationList = ({ isCreateModalOpen, setCreateModalOpen }) => {
                 onAddPoll={(slide) => setAddingPollTo(slide)}
                 onAddWordCloud={(slide) => setAddingWordCloudTo(slide)}
                 onAddBubbleQuiz={(slide) => setAddingBubbleQuizTo(slide)}
+                onDeleteActivity={(slide) => setDeletingActivityFrom(slide)}
             />
+            <ConfirmationModal
+                isOpen={!!deletingActivityFrom}
+                onClose={() => setDeletingActivityFrom(null)}
+                onConfirm={handleActivityDelete}
+                title="Delete Activity?"
+            >
+                <p>Are you sure you want to remove the activity from this slide?</p>
+            </ConfirmationModal>
             <QuizCreationModal
                 isOpen={!!addingQuizTo}
                 onClose={() => setAddingQuizTo(null)}
